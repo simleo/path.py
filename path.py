@@ -502,7 +502,7 @@ class path(unicode):
 
         return [p for p in self.listdir(pattern, normcase=None) if p.isfile()]
 
-    def walk(self, pattern=None, errors='strict'):
+    def walk(self, pattern=None, errors='strict', normcase=None):
         """ D.walk() -> iterator over files and subdirs, recursively.
 
         The iterator yields path objects naming each child item of
@@ -535,7 +535,7 @@ class path(unicode):
                 raise
 
         for child in childList:
-            if pattern is None or child.fnmatch(pattern):
+            if pattern is None or child.fnmatch(pattern, normcase):
                 yield child
             try:
                 isdir = child.isdir()
@@ -552,10 +552,10 @@ class path(unicode):
                     raise
 
             if isdir:
-                for item in child.walk(pattern, errors):
+                for item in child.walk(pattern, errors, normcase):
                     yield item
 
-    def walkdirs(self, pattern=None, errors='strict'):
+    def walkdirs(self, pattern=None, errors='strict', normcase=None):
         """ D.walkdirs() -> iterator over subdirs, recursively.
 
         With the optional `pattern` argument, this yields only
@@ -586,12 +586,12 @@ class path(unicode):
                 raise
 
         for child in dirs:
-            if pattern is None or child.fnmatch(pattern):
+            if pattern is None or child.fnmatch(pattern, normcase):
                 yield child
-            for subsubdir in child.walkdirs(pattern, errors):
+            for subsubdir in child.walkdirs(pattern, errors, normcase):
                 yield subsubdir
 
-    def walkfiles(self, pattern=None, errors='strict'):
+    def walkfiles(self, pattern=None, errors='strict', normcase=None):
         """ D.walkfiles() -> iterator over files in D, recursively.
 
         The optional argument, `pattern`, limits the results to files
@@ -633,10 +633,10 @@ class path(unicode):
                     raise
 
             if isfile:
-                if pattern is None or child.fnmatch(pattern):
+                if pattern is None or child.fnmatch(pattern, normcase):
                     yield child
             elif isdir:
-                for f in child.walkfiles(pattern, errors):
+                for f in child.walkfiles(pattern, errors, normcase):
                     yield f
 
     def fnmatch(self, pattern, normcase=None):
