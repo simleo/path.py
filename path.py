@@ -455,7 +455,7 @@ class path(unicode):
 
     # --- Listing, searching, walking, and matching
 
-    def listdir(self, pattern=None):
+    def listdir(self, pattern=None, normcase=None):
         """ D.listdir() -> List of items in this directory.
 
         Use :meth:`files` or :meth:`dirs` instead if you want a listing
@@ -473,10 +473,10 @@ class path(unicode):
         return [
             self / child
             for child in os.listdir(self)
-            if self._next_class(child).fnmatch(pattern)
+            if self._next_class(child).fnmatch(pattern, normcase)
         ]
 
-    def dirs(self, pattern=None):
+    def dirs(self, pattern=None, normcase=None):
         """ D.dirs() -> List of this directory's subdirectories.
 
         The elements of the list are path objects.
@@ -487,9 +487,9 @@ class path(unicode):
         directories whose names match the given pattern.  For
         example, ``d.dirs('build-*')``.
         """
-        return [p for p in self.listdir(pattern) if p.isdir()]
+        return [p for p in self.listdir(pattern, normcase) if p.isdir()]
 
-    def files(self, pattern=None):
+    def files(self, pattern=None, normcase=None):
         """ D.files() -> List of the files in this directory.
 
         The elements of the list are path objects.
@@ -500,7 +500,7 @@ class path(unicode):
         ``d.files('*.pyc')``.
         """
 
-        return [p for p in self.listdir(pattern) if p.isfile()]
+        return [p for p in self.listdir(pattern, normcase=None) if p.isfile()]
 
     def walk(self, pattern=None, errors='strict'):
         """ D.walk() -> iterator over files and subdirs, recursively.
