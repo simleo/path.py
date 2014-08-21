@@ -81,4 +81,15 @@ class HdfsPath(path_mod.path):
         parent, child = self.module.splitpath(self)
         return self._next_class(parent), child
 
+    def relpath(self, start=None):
+        """
+        Return a relative path from start to this path, where start
+        defaults to this path's current working directory.
+        """
+        if start is None:
+            start = self.cwd
+        else:
+            start = self._next_class(start)
+        return start.relpathto(self)
+
     # --- TODO: add more methods

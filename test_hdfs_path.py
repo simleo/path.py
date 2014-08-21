@@ -83,10 +83,10 @@ class TestPurePath(unittest.TestCase):
 class TestHdfsPath(unittest.TestCase):
 
     def setUp(self):
-        wd = make_random_str()
+        self.wd_bn = make_random_str()
         with hdfs.hdfs('default', 0) as fs:
-            fs.create_directory(wd)
-            self.wd = fs.get_path_info(wd)['name']  # full URI
+            fs.create_directory(self.wd_bn)
+            self.wd = fs.get_path_info(self.wd_bn)['name']  # full URI
 
     def tearDown(self):
         with hdfs.hdfs('default', 0) as fs:
@@ -107,6 +107,28 @@ class TestHdfsPath(unittest.TestCase):
     def test_context_mgmt(self):
         with path('%s/%s' % (self.wd, make_random_str())) as p:
             self.assertEqual(p.cwd, p)
+
+    def test_abspath(self):
+        p = path(self.wd_bn).abspath()
+        self.assertTrue(hdfs.path.isfull(p))
+
+    def test_relpath(self):
+        a = path(self.wd)
+        b0, b1 = a / 'b0', a / 'b1'
+        c = b0 / 'c'
+        #--
+        self.assertEqual(a.relpathto(c), path('b0') / 'c')
+        self.assertEqual(c.relpathto(a), path('..') / '..')
+        self.assertEqual(b1.relpathto(c), path('..') / 'b0' / 'c')
+        self.assertEqual(c.relpathto(b1), path('..') / '..' / 'b1')
+        self.assertEqual(a.relpathto(a), path('.'))
+        # unreachable dest
+        other_root = path('hdfs://foo:1/')
+        self.assertEqual(a.relpathto(other_root), other_root)
+        self.assertEqual(other_root.relpathto(a), a)
+        # relpath()
+        self.assertEqual(a.relpath(), a.cwd.relpathto(a))
+        self.assertEqual(c.relpath(a), a.relpathto(c))
 
 
 def suite():
