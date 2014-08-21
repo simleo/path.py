@@ -130,6 +130,20 @@ class TestHdfsPath(unittest.TestCase):
         self.assertEqual(a.relpath(), a.cwd.relpathto(a))
         self.assertEqual(c.relpath(a), a.relpathto(c))
 
+    def test_listdir(self):
+        dnames = ['foo', 'bar', 'tar']
+        fnames = ['%s.ext' % _ for _ in dnames]
+        d = path(self.wd)
+        for n in dnames:
+            hdfs.mkdir(d / n)
+        for n in fnames:
+            hdfs.dump('TEXT\n', d / n)
+        self.assertEqual(set(_.name for _ in d.listdir()), set(dnames + fnames))
+        self.assertEqual(
+            set(_.name for _ in d.listdir('f*')), set([dnames[0], fnames[0]])
+            )
+        self.assertRaises(OSError, (d / fnames[0]).listdir)
+
 
 def suite():
     loader = unittest.TestLoader()
