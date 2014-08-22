@@ -138,11 +138,27 @@ class TestHdfsPath(unittest.TestCase):
             hdfs.mkdir(d / n)
         for n in fnames:
             hdfs.dump('TEXT\n', d / n)
-        self.assertEqual(set(_.name for _ in d.listdir()), set(dnames + fnames))
-        self.assertEqual(
-            set(_.name for _ in d.listdir('f*')), set([dnames[0], fnames[0]])
-            )
+        nset = lambda seq: set(_.name for _ in seq)
+        self.assertEqual(nset(d.listdir()), set(dnames + fnames))
+        self.assertEqual(nset(d.listdir('f*')), set([dnames[0], fnames[0]]))
+        self.assertEqual(nset(d.dirs('*ar')), set(dnames[1:]))
+        self.assertEqual(nset(d.files('*ar*')), set(fnames[1:]))
         self.assertRaises(OSError, (d / fnames[0]).listdir)
+
+    def test_walk(self):
+        root = path(self.wd)
+        a = root / 'a'
+        b0, b1 = [root / ('b%d' % _) for _ in xrange(2)]
+        c = b0 / 'c'
+        all_dirs = set([a, b0, b1, c])
+        all_files = set([_ / 'foo.ext' for _ in all_dirs])
+        for p in all_dirs:
+            hdfs.mkdir(p)
+        for p in all_files:
+            hdfs.dump('TEXT\n', p)
+        self.assertEqual(set(root.walk()), all_dirs | all_files)
+        self.assertEqual(set(root.walkdirs()), all_dirs)
+        self.assertEqual(set(root.walkfiles()), all_files)
 
 
 def suite():
