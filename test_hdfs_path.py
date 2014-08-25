@@ -80,7 +80,7 @@ class TestPurePath(unittest.TestCase):
         self.assertEqual(tuple((r / a / b).splitall()), parts)
 
 
-class TestHdfsPath(unittest.TestCase):
+class ConcretePathFixture(object):
 
     def setUp(self):
         self.wd_bn = make_random_str()
@@ -91,6 +91,9 @@ class TestHdfsPath(unittest.TestCase):
     def tearDown(self):
         with hdfs.hdfs('default', 0) as fs:
             fs.delete(self.wd)
+
+
+class TestHdfsPath(ConcretePathFixture, unittest.TestCase):
 
     def test_cwd(self):
         p = path('%s/%s' % (self.wd, make_random_str()))
@@ -159,6 +162,16 @@ class TestHdfsPath(unittest.TestCase):
         self.assertEqual(set(root.walk()), all_dirs | all_files)
         self.assertEqual(set(root.walkdirs()), all_dirs)
         self.assertEqual(set(root.walkfiles()), all_files)
+
+
+class TestIO(ConcretePathFixture, unittest.TestCase):
+
+    def test_bytes(self):
+        content = 'FOO\n'
+        p = path(self.wd) / 'foo'
+        with p.open('w') as f:
+            f.write(content)
+        self.assertEqual(p.bytes(), content)
 
 
 def suite():

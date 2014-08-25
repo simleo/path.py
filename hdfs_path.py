@@ -6,6 +6,9 @@ import os, errno
 
 import pydoop.hdfs as hdfs
 import pydoop.hdfs.path as hpath
+# FIXME: set readline_chunk_size=None in pydoop.hdfs.open
+from pydoop.hdfs.common import BUFSIZE
+
 import path as path_mod
 
 
@@ -110,6 +113,16 @@ class HdfsPath(path_mod.path):
                 if self._next_class(_).fnmatch(pattern)]
 
     # --- TODO: add more methods
+
+    def glob(self, pattern):
+        raise NotImplementedError  # skip for now
+
+    def open(self, mode="r", buff_size=0, replication=0, blocksize=0,
+             readline_chunk_size=BUFSIZE, user=None):
+        mode = mode.strip().rstrip('b')
+        return hdfs.open(self, mode=mode, buff_size=buff_size,
+                         replication=replication, blocksize=blocksize,
+                         readline_chunk_size=readline_chunk_size, user=user)
 
     # utilities
     def __oserror(self, code, name=None):
