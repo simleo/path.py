@@ -166,12 +166,23 @@ class TestHdfsPath(ConcretePathFixture, unittest.TestCase):
 
 class TestIO(ConcretePathFixture, unittest.TestCase):
 
+    def setUp(self):
+        super(TestIO, self).setUp()
+        self.chunks = ['0123\r\n', '4567\r\n', '89\r\n']
+        self.content = ''.join(self.chunks)
+        self.p = path(self.wd) / 'foo'
+        with self.p.open('w') as f:
+            f.write(self.content)
+
     def test_bytes(self):
-        content = 'FOO\n'
-        p = path(self.wd) / 'foo'
-        with p.open('w') as f:
-            f.write(content)
-        self.assertEqual(p.bytes(), content)
+        self.assertEqual(self.p.bytes(), self.content)
+
+    def test_chunks(self):
+        size = len(self.chunks[0])
+        self.assertEqual(list(self.p.chunks(size)), self.chunks)
+
+    def test_text(self):
+        self.assertEqual(self.p.text(), self.content.replace('\r', ''))
 
 
 def suite():
@@ -180,6 +191,7 @@ def suite():
     s.addTests([loader.loadTestsFromTestCase(_) for _ in (
         TestPurePath,
         TestHdfsPath,
+        TestIO,
         )])
     return s
 

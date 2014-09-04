@@ -10,6 +10,7 @@ import pydoop.hdfs.path as hpath
 from pydoop.hdfs.common import BUFSIZE
 
 import path as path_mod
+PY3 = path_mod.PY3
 
 
 class HdfsPath(path_mod.path):
@@ -123,6 +124,25 @@ class HdfsPath(path_mod.path):
         return hdfs.open(self, mode=mode, buff_size=buff_size,
                          replication=replication, blocksize=blocksize,
                          readline_chunk_size=readline_chunk_size, user=user)
+
+    def text(self, encoding=None, errors='strict'):
+        """
+        Open file and return its contents as text, with all newline
+        characters converted to ``'\n'``.
+
+        The ``encoding`` and ``errors`` parameters work as in
+        :func:`codecs.open`, with the following exception: if
+        ``encoding`` is :obj:`None`, the text is returned as an 8-bit
+        string.
+        """
+        to8b = False
+        if encoding is None:
+            encoding = 'ascii'
+            to8b = True
+        t = super(HdfsPath, self).text(encoding=encoding, errors=errors)
+        if to8b:
+            t = bytes(t, 'ascii') if PY3 else str(t)
+        return t
 
     # utilities
     def __oserror(self, code, name=None):
