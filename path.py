@@ -717,7 +717,8 @@ class path(unicode):
         """ Returns a generator yielding chunks of the file, so it can
             be read piece by piece with a simple for loop.
 
-           Any argument you pass after `size` will be passed to `open()`.
+           Any argument you pass after ``size`` will be passed to
+           :meth:`open()`.
 
            :example:
 
@@ -727,7 +728,7 @@ class path(unicode):
 
             This will read the file by chunks of 8192 bytes.
         """
-        with open(self, *args, **kwargs) as f:
+        with self.open(*args, **kwargs) as f:
             while True:
                 d = f.read(size)
                 if not d:
@@ -768,10 +769,16 @@ class path(unicode):
             with self.open('U') as f:
                 return f.read()
         else:
-            # Unicode
-            with codecs.open(self, 'r', encoding, errors) as f:
+            # Unicode. The file *must* be opened in binary mode to
+            # avoid data loss (see the docs for codecs.open)
+            with self.open('rb') as f:
                 # (Note - Can't use 'U' mode here, since codecs.open
                 # doesn't support 'U' mode.)
+                if encoding is not None:
+                    info = codecs.lookup(encoding)
+                    f = codecs.StreamReaderWriter(
+                        f, info.streamreader, info.streamwriter, errors
+                        )
                 t = f.read()
             return (t.replace(u('\r\n'), u('\n'))
                      .replace(u('\r\x85'), u('\n'))
