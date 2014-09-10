@@ -181,8 +181,28 @@ class TestIO(ConcretePathFixture, unittest.TestCase):
         size = len(self.chunks[0])
         self.assertEqual(list(self.p.chunks(size)), self.chunks)
 
+    def test_write_bytes(self):
+        clone = self.p + '_copy'
+        clone.write_bytes(self.content)
+        self.assertEqual(clone.bytes(), self.content)
+        # TODO: add test for append=True
+
     def test_text(self):
         self.assertEqual(self.p.text(), self.content.replace('\r', ''))
+
+    def test_write_text(self):
+        clone = self.p + '_copy'
+        clone.write_text(self.content, linesep='\n')
+        self.assertEqual(clone.bytes(), self.content.replace('\r', ''))
+
+    def test_lines(self):
+        lines = [_.replace('\r', '') for _ in self.chunks]
+        self.assertEqual(self.p.lines(), lines)
+
+    def test_write_lines(self):
+        clone = self.p + '_copy'
+        clone.write_lines(self.chunks, linesep='\n')
+        self.assertEqual(clone.bytes(), self.content.replace('\r', ''))
 
 
 def suite():

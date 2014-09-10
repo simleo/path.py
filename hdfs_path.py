@@ -2,7 +2,7 @@
 An object representing an HDFS path to a file or directory.
 """
 
-import os, errno
+import os, errno, re
 
 import pydoop.hdfs as hdfs
 import pydoop.hdfs.path as hpath
@@ -11,6 +11,16 @@ from pydoop.hdfs.common import BUFSIZE
 
 import path as path_mod
 PY3 = path_mod.PY3
+
+
+_MODE_PATTERN = re.compile(r'[rwaU]')
+
+def sanitize_mode(mode):  # FIXME: fix this in Pydoop
+    try:
+        mode = _MODE_PATTERN.findall(mode)[0]
+    except IndexError:
+        raise ValueError('invalid mode string %r' % (mode,))
+    return 'r' if mode == 'U' else mode  # FIXME: don't just ignore 'U'
 
 
 class HdfsPath(path_mod.path):
@@ -113,15 +123,12 @@ class HdfsPath(path_mod.path):
         return [self / _ for _ in map(self._always_unicode, ls)
                 if self._next_class(_).fnmatch(pattern)]
 
-    # --- TODO: add more methods
-
     def glob(self, pattern):
-        raise NotImplementedError  # skip for now
+        raise NotImplementedError  # FIXME
 
     def open(self, mode="r", buff_size=0, replication=0, blocksize=0,
              readline_chunk_size=BUFSIZE, user=None):
-        mode = mode.strip().rstrip('b')
-        return hdfs.open(self, mode=mode, buff_size=buff_size,
+        return hdfs.open(self, mode=sanitize_mode(mode), buff_size=buff_size,
                          replication=replication, blocksize=blocksize,
                          readline_chunk_size=readline_chunk_size, user=user)
 
@@ -143,6 +150,20 @@ class HdfsPath(path_mod.path):
         if to8b:
             t = bytes(t, 'ascii') if PY3 else str(t)
         return t
+
+    def lines(self, encoding=None, errors='strict', retain=True):
+        """
+        Open file and return its contents as a list of text lines.
+
+        If ``retain`` is set to :obj:`True`, newline characters are
+        kept, after converting them to ``'\n'``.
+
+        The ``encoding`` and ``errors`` parameters work as in
+        :func:`codecs.open`, with the following exception: if
+        ``encoding`` is :obj:`None`, the text is returned as an 8-bit
+        string.
+        """
+        return self.text(encoding, errors).splitlines(retain)
 
     # utilities
     def __oserror(self, code, name=None):
