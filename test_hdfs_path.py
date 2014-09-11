@@ -212,6 +212,39 @@ class TestIO(ConcretePathFixture, unittest.TestCase):
         self.assertEqual(self.p.read_hexhash('md5'), self.hash.hexdigest())
 
 
+class TestFSQuery(ConcretePathFixture, unittest.TestCase):
+
+    def setUp(self):
+        super(TestFSQuery, self).setUp()
+        self.d = path(self.wd)
+        self.p = self.d / 'foo'
+        self.same_p = self.d / 'bar' / '..' / 'foo'
+        with self.p.open('w') as f:
+            f.write('foo')
+
+    def test_isabs(self):
+        for p in self.d, self.p:
+            self.assertTrue(p.isabs())
+        self.assertFalse(path('foo').isabs())
+
+    def test_exists(self):
+        for p in self.d, self.p:
+            self.assertTrue(p.exists())
+        self.assertFalse(path(make_random_str()).exists())
+
+    def test_is_something(self):
+        for test in self.d.isdir(), self.p.isfile():
+            self.assertTrue(test)
+        for test in self.p.isdir(), self.d.isfile():
+            self.assertFalse(test)
+        for p in self.d, self.p:
+            for test in p.islink(), p.ismount():
+                self.assertFalse(test)
+
+    def test_samefile(self):
+        self.assertTrue(self.p.samefile(self.same_p))
+
+
 def suite():
     loader = unittest.TestLoader()
     s = unittest.TestSuite()
@@ -219,6 +252,7 @@ def suite():
         TestPurePath,
         TestHdfsPath,
         TestIO,
+        TestFSQuery,
         )])
     return s
 
