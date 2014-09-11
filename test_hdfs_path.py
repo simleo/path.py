@@ -2,7 +2,7 @@
 Test the hdfs_path module.
 """
 
-import os, unittest, uuid
+import os, unittest, uuid, hashlib
 
 import pydoop.hdfs as hdfs
 from hdfs_path import HdfsPath as path
@@ -173,6 +173,8 @@ class TestIO(ConcretePathFixture, unittest.TestCase):
         self.p = path(self.wd) / 'foo'
         with self.p.open('w') as f:
             f.write(self.content)
+        self.hash = hashlib.md5()
+        self.hash.update(self.content)
 
     def test_bytes(self):
         self.assertEqual(self.p.bytes(), self.content)
@@ -203,6 +205,11 @@ class TestIO(ConcretePathFixture, unittest.TestCase):
         clone = self.p + '_copy'
         clone.write_lines(self.chunks, linesep='\n')
         self.assertEqual(clone.bytes(), self.content.replace('\r', ''))
+
+    def test_hash(self):
+        for h in self.p.read_md5(), self.p.read_hash('md5'):
+            self.assertEqual(h, self.hash.digest())
+        self.assertEqual(self.p.read_hexhash('md5'), self.hash.hexdigest())
 
 
 def suite():
