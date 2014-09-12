@@ -165,6 +165,21 @@ class HdfsPath(path_mod.path):
         """
         return self.text(encoding, errors).splitlines(retain)
 
+    def stat(self):
+        """
+        Perform the equivalent of ``os.stat`` on this path
+        """
+        return hdfs.stat(self)
+
+    def lstat(self):
+        """
+        Perform the equivalent of ``os.lstat`` on this path
+        """
+        return hdfs.lstat(self)
+
+    def access(self, mode, user=None):
+        return hdfs.access(self, mode, user=user)
+
     # utilities
     def __oserror(self, code, name=None):
         if name is None:

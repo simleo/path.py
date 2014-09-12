@@ -2,7 +2,7 @@
 Test the hdfs_path module.
 """
 
-import os, unittest, uuid, hashlib
+import os, unittest, uuid, hashlib, numbers
 
 import pydoop.hdfs as hdfs
 from hdfs_path import HdfsPath as path
@@ -219,8 +219,9 @@ class TestFSQuery(ConcretePathFixture, unittest.TestCase):
         self.d = path(self.wd)
         self.p = self.d / 'foo'
         self.same_p = self.d / 'bar' / '..' / 'foo'
+        self.content = 'foo\n'
         with self.p.open('w') as f:
-            f.write('foo')
+            f.write(self.content)
 
     def test_isabs(self):
         for p in self.d, self.p:
@@ -243,6 +244,20 @@ class TestFSQuery(ConcretePathFixture, unittest.TestCase):
 
     def test_samefile(self):
         self.assertTrue(self.p.samefile(self.same_p))
+
+    def test_stat_related(self):
+        for s in self.p.stat().st_size, self.p.getsize(), self.p.size:
+            self.assertEqual(s, len(self.content))
+        # minimal tests for get*time()
+        for c in 'amc':
+            meth = getattr(self.p, 'get%stime' % c)
+            prop = getattr(self.p, '%stime' % c)
+            self.assertTrue(isinstance(meth(), numbers.Number))
+            self.assertTrue(isinstance(prop, numbers.Number))
+
+    def test_access(self):
+        for p in self.d, self.p:
+            self.assertTrue(p.access(os.W_OK))
 
 
 def suite():
