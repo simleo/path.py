@@ -180,6 +180,18 @@ class HdfsPath(path_mod.path):
     def access(self, mode, user=None):
         return hdfs.access(self, mode, user=user)
 
+    def get_owner(self):
+        return self.stat().st_uid
+
+    def statvfs(self):
+        raise NotImplementedError  # FIXME
+
+    def pathconf(self):
+        raise NotImplementedError  # FIXME
+
+    def utime(self, times=None, user=None):
+        hdfs.utime(self, times=times, user=user)
+
     # utilities
     def __oserror(self, code, name=None):
         if name is None:

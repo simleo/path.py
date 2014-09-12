@@ -260,6 +260,21 @@ class TestFSQuery(ConcretePathFixture, unittest.TestCase):
             self.assertTrue(p.access(os.W_OK))
 
 
+class TestMod(ConcretePathFixture, unittest.TestCase):
+
+    def setUp(self):
+        super(TestMod, self).setUp()
+        self.d = path(self.wd)
+        self.p = self.d / 'foo'
+        hdfs.dump('foo\n', self.p)
+
+    def test_utime(self):
+        new_at, new_mt = self.p.atime - 100, self.p.mtime - 50
+        self.p.utime((new_at, new_mt))
+        self.assertEqual(self.p.atime, new_at)
+        self.assertEqual(self.p.mtime, new_mt)
+
+
 def suite():
     loader = unittest.TestLoader()
     s = unittest.TestSuite()
@@ -268,6 +283,7 @@ def suite():
         TestHdfsPath,
         TestIO,
         TestFSQuery,
+        TestMod,
         )])
     return s
 
