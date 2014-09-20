@@ -192,6 +192,9 @@ class HdfsPath(path_mod.path):
     def utime(self, times=None, user=None):
         hdfs.utime(self, times=times, user=user)
 
+    def chmod(self, mode, user=None):
+        hdfs.chmod(self, mode, user=user)
+
     # utilities
     def __oserror(self, code, name=None):
         if name is None:

@@ -274,6 +274,12 @@ class TestMod(ConcretePathFixture, unittest.TestCase):
         self.assertEqual(self.p.atime, new_at)
         self.assertEqual(self.p.mtime, new_mt)
 
+    def test_chmod(self):
+        old_mode = self.d.stat().st_mode
+        new_mode = (old_mode + 1) % 01000
+        self.d.chmod(new_mode)
+        self.assertEqual(self.d.stat().st_mode, new_mode)
+
 
 def suite():
     loader = unittest.TestLoader()
