@@ -195,6 +195,10 @@ class HdfsPath(path_mod.path):
     def chmod(self, mode, user=None):
         hdfs.chmod(self, mode, user=user)
 
+    # TODO: support numeric uid/gid when fs is the local fs
+    def chown(self, user=None, group=None, hdfs_user=None):
+        hdfs.chown(self, user=user, group=group, hdfs_user=hdfs_user)
+
     # utilities
     def __oserror(self, code, name=None):
         if name is None:

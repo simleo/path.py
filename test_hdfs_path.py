@@ -280,6 +280,11 @@ class TestMod(ConcretePathFixture, unittest.TestCase):
         self.d.chmod(new_mode)
         self.assertEqual(self.d.stat().st_mode, new_mode)
 
+    def test_chown(self):
+        new_user = 'nobody'
+        self.p.chown(user=new_user)
+        self.assertEqual(hdfs.lsl(self.p)[0]['owner'], new_user)
+
 
 def suite():
     loader = unittest.TestLoader()
