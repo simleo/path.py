@@ -30,12 +30,8 @@ Example::
     from path import path
     d = path('/home/guido/bin')
     for f in d.files('*.py'):
-        f.chmod(0755)
-
-path.py requires Python 2.5 or later.
+        f.chmod(0o755)
 """
-
-from __future__ import with_statement
 
 import sys
 import warnings
@@ -62,47 +58,15 @@ try:
 except ImportError:
     pass
 
-################################
-# Monkey patchy python 3 support
-try:
-    basestring
-except NameError:
-    basestring = str
+##############################################################################
+# Python 2/3 support
+PY3 = sys.version_info >= (3,)
+PY2 = not PY3
 
-try:
-    unicode
-except NameError:
-    unicode = str
-
-try:
-    getcwdu = os.getcwdu
-except AttributeError:
-    getcwdu = os.getcwd
-
-PY3 = sys.version_info[0] >= 3
-if PY3:
-    def u(x):
-        return x
-else:
-    def u(x):
-        return codecs.unicode_escape_decode(x)[0]
-
-o777 = 511
-o766 = 502
-o666 = 438
-o554 = 364
-################################
-
-##########################
-# Python 2.5 compatibility
-try:
-    from functools import reduce
-except ImportError:
-    pass
-##########################
-
-##############################################################
-# Support for surrogateescape
+string_types = str,
+text_type = str
+getcwdu = os.getcwd
+u = lambda x: x
 
 def surrogate_escape(error):
     """
@@ -112,13 +76,18 @@ def surrogate_escape(error):
     assert len(chars) == 1
     val = ord(chars)
     val += 0xdc00
-    return unichr(val), error.end
+    return __builtin__.unichr(val), error.end
 
-if not PY3:
+if PY2:
+    import __builtin__
+    string_types = __builtin__.basestring,
+    text_type = __builtin__.unicode
+    getcwdu = os.getcwdu
+    u = lambda x: codecs.unicode_escape_decode(x)[0]
     codecs.register_error('surrogateescape', surrogate_escape)
-###############################################################
+##############################################################################
 
-__version__ = '5.3'
+__version__ = '6.1'
 __all__ = ['path', 'CaseInsensitivePattern']
 
 
@@ -161,7 +130,7 @@ class multimethod(object):
         )
 
 
-class path(unicode):
+class path(text_type):
     """ Represents a filesystem path.
 
     For documentation on individual methods, consult their
@@ -200,7 +169,7 @@ class path(unicode):
         Ensure the path as retrieved from a Python API, such as :func:`os.listdir`,
         is a proper Unicode string.
         """
-        if PY3 or isinstance(path, unicode):
+        if PY3 or isinstance(path, text_type):
             return path
         return path.decode(sys.getfilesystemencoding(), 'surrogateescape')
 
@@ -217,7 +186,7 @@ class path(unicode):
             return NotImplemented
 
     def __radd__(self, other):
-        if not isinstance(other, basestring):
+        if not isinstance(other, string_types):
             return NotImplemented
         return self._next_class(other.__add__(self))
 
@@ -541,25 +510,32 @@ class path(unicode):
 
         The `errors=` keyword argument controls behavior when an
         error occurs.  The default is ``'strict'``, which causes an
-        exception.  The other allowed values are ``'warn'`` (which
+        exception.  Other allowed values are ``'warn'`` (which
         reports the error via :func:`warnings.warn()`), and ``'ignore'``.
+        `errors` may also be an arbitrary callable taking a msg parameter.
         """
-        if errors not in ('strict', 'warn', 'ignore'):
+        class Handlers:
+            def strict(msg):
+                raise
+
+            def warn(msg):
+                warnings.warn(msg, TreeWalkWarning)
+
+            def ignore(msg):
+                pass
+
+        if not callable(errors) and errors not in vars(Handlers):
             raise ValueError("invalid errors parameter")
+        errors = vars(Handlers).get(errors, errors)
 
         try:
             childList = self.listdir()
         except Exception:
-            if errors == 'ignore':
-                return
-            elif errors == 'warn':
-                warnings.warn(
-                    "Unable to list directory '%s': %s"
-                    % (self, sys.exc_info()[1]),
-                    TreeWalkWarning)
-                return
-            else:
-                raise
+            exc = sys.exc_info()[1]
+            tmpl = "Unable to list directory '%(self)s': %(exc)s"
+            msg = tmpl % locals()
+            errors(msg)
+            return
 
         for child in childList:
             if pattern is None or child.fnmatch(pattern):
@@ -567,16 +543,11 @@ class path(unicode):
             try:
                 isdir = child.isdir()
             except Exception:
-                if errors == 'ignore':
-                    isdir = False
-                elif errors == 'warn':
-                    warnings.warn(
-                        "Unable to access '%s': %s"
-                        % (child, sys.exc_info()[1]),
-                        TreeWalkWarning)
-                    isdir = False
-                else:
-                    raise
+                exc = sys.exc_info()[1]
+                tmpl = "Unable to access '%(child)s': %(exc)s"
+                msg = tmpl % locals()
+                errors(msg)
+                isdir = False
 
             if isdir:
                 for item in child.walk(pattern, errors):
@@ -851,7 +822,7 @@ class path(unicode):
         conversion.
 
         """
-        if isinstance(text, unicode):
+        if isinstance(text, text_type):
             if linesep is not None:
                 # Convert all standard end-of-line sequences to
                 # ordinary newline characters.
@@ -929,10 +900,10 @@ class path(unicode):
                 :meth:`file.writelines`.
 
         Use the keyword argument ``append=True`` to append lines to the
-        file.  The default is to overwrite the file.  
-        
+        file.  The default is to overwrite the file.
+
         .. warning ::
-        
+
             When you use this with Unicode data, if the encoding of the
             existing data in the file is different from the encoding
             you specify with the `encoding=` parameter, the result is
@@ -945,7 +916,7 @@ class path(unicode):
             mode = 'wb'
         with self.open(mode) as f:
             for line in lines:
-                isUnicode = isinstance(line, unicode)
+                isUnicode = isinstance(line, text_type)
                 if linesep is not None:
                     # Strip off any existing line-end and add the
                     # specified linesep string.
@@ -1198,12 +1169,12 @@ class path(unicode):
     #
     # --- Create/delete operations on directories
 
-    def mkdir(self, mode=o777):
+    def mkdir(self, mode=0o777):
         """ .. seealso:: :func:`os.mkdir` """
         os.mkdir(self, mode)
         return self
 
-    def mkdir_p(self, mode=o777):
+    def mkdir_p(self, mode=0o777):
         """ Like :meth:`mkdir`, but does not raise an exception if the
         directory already exists. """
         try:
@@ -1214,12 +1185,12 @@ class path(unicode):
                 raise
         return self
 
-    def makedirs(self, mode=o777):
+    def makedirs(self, mode=0o777):
         """ .. seealso:: :func:`os.makedirs` """
         os.makedirs(self, mode)
         return self
 
-    def makedirs_p(self, mode=o777):
+    def makedirs_p(self, mode=0o777):
         """ Like :meth:`makedirs`, but does not raise an exception if the
         directory already exists. """
         try:
@@ -1268,7 +1239,7 @@ class path(unicode):
         """ Set the access/modified times of this file to the current time.
         Create the file if it does not exist.
         """
-        fd = os.open(self, os.O_WRONLY | os.O_CREAT, o666)
+        fd = os.open(self, os.O_WRONLY | os.O_CREAT, 0o666)
         os.close(fd)
         os.utime(self, None)
         return self
@@ -1512,33 +1483,33 @@ def _permission_mask(mode):
     suitable for applying to a mask to affect that change.
 
     >>> mask = _permission_mask('ugo+rwx')
-    >>> mask(o554) == o777
+    >>> mask(0o554) == 0o777
     True
 
-    >>> _permission_mask('go-x')(o777) == o766
+    >>> _permission_mask('go-x')(0o777) == 0o766
     True
     """
     parsed = re.match('(?P<who>[ugo]+)(?P<op>[-+])(?P<what>[rwx]+)$', mode)
     if not parsed:
         raise ValueError("Unrecognized symbolic mode", mode)
     spec_map = dict(r=4, w=2, x=1)
-    spec = reduce(operator.or_, [spec_map[perm]
+    spec = functools.reduce(operator.or_, [spec_map[perm]
                   for perm in parsed.group('what')])
     # now apply spec to each in who
     shift_map = dict(u=6, g=3, o=0)
-    mask = reduce(operator.or_, [spec << shift_map[subj]
+    mask = functools.reduce(operator.or_, [spec << shift_map[subj]
                   for subj in parsed.group('who')])
 
     op = parsed.group('op')
     # if op is -, invert the mask
     if op == '-':
-        mask ^= o777
+        mask ^= 0o777
 
     op_map = {'+': operator.or_, '-': operator.and_}
     return functools.partial(op_map[op], mask)
 
 
-class CaseInsensitivePattern(unicode):
+class CaseInsensitivePattern(text_type):
     """
     A string with a ``'normcase'`` property, suitable for passing to
     :meth:`listdir`, :meth:`dirs`, :meth:`files`, :meth:`walk`,

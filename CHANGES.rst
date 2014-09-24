@@ -1,6 +1,18 @@
 Changes
 =======
 
+6.0
+---
+
+ - Drop support for Python 2.5. Python 2.6 or later required.
+ - Installation now requires setuptools.
+
+5.3
+---
+
+ - Allow arbitrary callables to be passed to path.walk ``errors`` parameter.
+   Enables workaround for issues such as #73 and #56.
+
 5.2
 ---
 
