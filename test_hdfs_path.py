@@ -285,6 +285,18 @@ class TestMod(ConcretePathFixture, unittest.TestCase):
         self.p.chown(user=new_user)
         self.assertEqual(hdfs.lsl(self.p)[0]['owner'], new_user)
 
+    def test_rename(self):
+        new_name = self.p + '_2'
+        new_p = self.p.rename(new_name)
+        self.assertFalse(self.p.exists())
+        self.assertTrue(new_p.exists())
+
+    def test_renames(self):
+        new_name = self.d / 'new_d' / 'foo'
+        new_p = self.p.renames(new_name)
+        self.assertFalse(self.p.exists())
+        self.assertTrue(new_p.exists())
+
 
 def suite():
     loader = unittest.TestLoader()

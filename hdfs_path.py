@@ -199,6 +199,14 @@ class HdfsPath(path_mod.path):
     def chown(self, user=None, group=None, hdfs_user=None):
         hdfs.chown(self, user=user, group=group, hdfs_user=hdfs_user)
 
+    def rename(self, new, user=None):
+        hdfs.rename(self, new, user=user)
+        return self._next_class(new)
+
+    def renames(self, new, user=None):
+        hdfs.renames(self, new, user=user)
+        return self._next_class(new)
+
     # utilities
     def __oserror(self, code, name=None):
         if name is None:
