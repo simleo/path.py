@@ -310,33 +310,41 @@ class TestCreateDelete(ConcretePathFixture, unittest.TestCase):
         self.assertTrue(d.isdir())
         self.assertEqual(d.stat().st_mode, mode)
 
+    def __mkdir_common(self, d, meth_name):
+        meth = getattr(d, meth_name)
+        meth()
+        self.__check_dir(d, 0777)
+        hdfs.rmr(d)
+        new_mode = 0700
+        meth(mode=new_mode)
+        self.__check_dir(d, new_mode)
+
+    def __mkdir_nonrecursive(self, meth_name):
+        orphan = self.d / make_random_str() / make_random_str()
+        meth = getattr(orphan, meth_name)
+        self.assertRaises(OSError, meth)
+
     def test_mkdir(self):
         self.assertRaises(OSError, self.d.mkdir)
-        new_d = self.d / make_random_str()
-        orphan = new_d / make_random_str()
-        self.assertRaises(OSError, orphan.mkdir)
-        new_d.mkdir()
-        self.__check_dir(new_d, 0777)
+        self.__mkdir_common(self.d / make_random_str(), 'mkdir')
+        self.__mkdir_nonrecursive('mkdir')
 
     def test_mkdir_p(self):
-        self.d.mkdir_p()
-        self.assertTrue(self.d.isdir())
-        orphan = self.d / make_random_str() / make_random_str()
-        self.assertRaises(OSError, orphan.mkdir_p)
+        self.d.mkdir_p()  # should not break
+        self.__mkdir_common(self.d / make_random_str(), 'mkdir_p')
+        self.__mkdir_nonrecursive('mkdir_p')
 
     def test_makedirs(self):
         self.assertRaises(OSError, self.d.makedirs)
-        new_d = self.d / make_random_str() / make_random_str()
-        new_d.makedirs()
-        self.__check_dir(new_d, 0777)
-        hdfs.rmr(new_d)
-        new_mode = 0700
-        new_d.makedirs(mode=new_mode)
-        self.__check_dir(new_d, new_mode)
+        self.__mkdir_common(
+            self.d / make_random_str() / make_random_str(), 'makedirs'
+            )
 
     def test_makedirs_p(self):
-        self.d.makedirs_p()
-        self.assertTrue(self.d.isdir())
+        self.d.makedirs_p()  # should not break
+        self.__mkdir_common(
+            self.d / make_random_str() / make_random_str(), 'makedirs_p'
+            )
 
 
 def suite():
