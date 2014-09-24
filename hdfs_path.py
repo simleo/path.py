@@ -207,6 +207,25 @@ class HdfsPath(path_mod.path):
         hdfs.renames(self, new, user=user)
         return self._next_class(new)
 
+    def makedirs(self, mode=0o777, user=None):
+        hdfs.mkdir(self, user=user)
+
+    def mkdir(self, mode=0o777, user=None, recursive=False, can_exist=False):
+        if not can_exist and self.exists():
+            self.__oserror(errno.EEXIST)
+        if not recursive:
+            where = self.parent or self.cwd
+            if not where.exists():
+                self.__oserror(errno.ENOENT)
+        hdfs.mkdir(self, user=user)
+        hdfs.chmod(self, mode)
+
+    def mkdir_p(self, mode=0o777, user=None):
+        self.mkdir(mode=mode, user=user, can_exist=True)
+
+    def makedirs(self, mode=0o777, user=None):
+        self.mkdir(mode=mode, user=user, recursive=True)
+
     # utilities
     def __oserror(self, code, name=None):
         if name is None:

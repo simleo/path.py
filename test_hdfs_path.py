@@ -298,6 +298,43 @@ class TestMod(ConcretePathFixture, unittest.TestCase):
         self.assertTrue(new_p.exists())
 
 
+class TestCreateDelete(ConcretePathFixture, unittest.TestCase):
+
+    def setUp(self):
+        super(TestCreateDelete, self).setUp()
+        self.d = path(self.wd)
+        self.p = self.d / 'foo'
+        hdfs.dump('foo\n', self.p)
+
+    def __check_dir(self, d, mode):
+        self.assertTrue(d.isdir())
+        self.assertEqual(d.stat().st_mode, mode)
+
+    def test_mkdir(self):
+        self.assertRaises(OSError, self.d.mkdir)
+        new_d = self.d / make_random_str()
+        orphan = new_d / make_random_str()
+        self.assertRaises(OSError, orphan.mkdir)
+        new_d.mkdir()
+        self.__check_dir(new_d, 0777)
+
+    def test_mkdir_p(self):
+        self.d.mkdir_p()
+        self.assertTrue(self.d.isdir())
+        orphan = self.d / make_random_str() / make_random_str()
+        self.assertRaises(OSError, orphan.mkdir_p)
+
+    def test_makedirs(self):
+        self.assertRaises(OSError, self.d.makedirs)
+        new_d = self.d / make_random_str() / make_random_str()
+        new_d.makedirs()
+        self.__check_dir(new_d, 0777)
+        hdfs.rmr(new_d)
+        new_mode = 0700
+        new_d.makedirs(mode=new_mode)
+        self.__check_dir(new_d, new_mode)
+
+
 def suite():
     loader = unittest.TestLoader()
     s = unittest.TestSuite()
@@ -307,6 +344,7 @@ def suite():
         TestIO,
         TestFSQuery,
         TestMod,
+        TestCreateDelete,
         )])
     return s
 
