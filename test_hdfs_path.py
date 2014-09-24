@@ -334,6 +334,10 @@ class TestCreateDelete(ConcretePathFixture, unittest.TestCase):
         new_d.makedirs(mode=new_mode)
         self.__check_dir(new_d, new_mode)
 
+    def test_makedirs_p(self):
+        self.d.makedirs_p()
+        self.assertTrue(self.d.isdir())
+
 
 def suite():
     loader = unittest.TestLoader()

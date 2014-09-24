@@ -226,6 +226,9 @@ class HdfsPath(path_mod.path):
     def makedirs(self, mode=0o777, user=None):
         self.mkdir(mode=mode, user=user, recursive=True)
 
+    def makedirs_p(self, mode=0o777, user=None):
+        self.mkdir(mode=mode, user=user, can_exist=True, recursive=True)
+
     # utilities
     def __oserror(self, code, name=None):
         if name is None:
