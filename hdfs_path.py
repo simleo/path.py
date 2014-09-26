@@ -55,7 +55,7 @@ class HdfsPath(path_mod.path):
         """
         Current working directory, as a path object.
         """
-        return self._next_class(self.fs.working_directory(decode=True))
+        return self._next_class(self.fs.working_directory())
 
     def chdir(self, path=None):
         """
