@@ -1,6 +1,17 @@
 Changes
 =======
 
+6.2
+---
+
+ - ``path`` class renamed to ``Path``. The ``path`` name remains as an alias
+   for compatibility.
+
+6.1
+---
+
+ - ``chown`` now accepts names in addition to numeric IDs.
+
 6.0
 ---
 
