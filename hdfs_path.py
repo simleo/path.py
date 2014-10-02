@@ -2,7 +2,7 @@
 An object representing an HDFS path to a file or directory.
 """
 
-import os, errno, re
+import os, errno, re, codecs
 
 import pydoop.hdfs as hdfs
 import pydoop.hdfs.path as hpath
@@ -11,6 +11,7 @@ from pydoop.hdfs.common import BUFSIZE
 
 import path as path_mod
 PY3 = path_mod.PY3
+U_NEWLINE = path_mod.U_NEWLINE
 
 
 _MODE_PATTERN = re.compile(r'[rwaU]')
@@ -138,30 +139,24 @@ class HdfsPath(path_mod.path):
         characters converted to ``'\n'``.
 
         The ``encoding`` and ``errors`` parameters work as in
-        :func:`codecs.open`, with the following exception: if
-        ``encoding`` is :obj:`None`, the text is returned as an 8-bit
-        string.
+        :func:`codecs.open`.
         """
-        to8b = False
         if encoding is None:
             encoding = 'ascii'
-            to8b = True
-        t = super(HdfsPath, self).text(encoding=encoding, errors=errors)
-        if to8b:
-            t = bytes(t, 'ascii') if PY3 else str(t)
-        return t
+        with self.open('rb') as f:
+            info = codecs.lookup(encoding)
+            f = codecs.StreamReaderWriter(
+                f, info.streamreader, info.streamwriter, errors
+            )
+            return U_NEWLINE.sub('\n', f.read())
 
     def lines(self, encoding=None, errors='strict', retain=True):
         """
         Open file and return its contents as a list of text lines.
 
-        If ``retain`` is set to :obj:`True`, newline characters are
-        kept, after converting them to ``'\n'``.
-
         The ``encoding`` and ``errors`` parameters work as in
-        :func:`codecs.open`, with the following exception: if
-        ``encoding`` is :obj:`None`, the text is returned as an 8-bit
-        string.
+        :func:`codecs.open`.  If ``retain`` is set to :obj:`True`,
+        newline characters are kept, after converting them to ``'\n'``.
         """
         return self.text(encoding, errors).splitlines(retain)
 
